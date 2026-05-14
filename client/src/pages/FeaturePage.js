@@ -6,8 +6,24 @@ import DetailModal from '../components/DetailModal';
 import AIPanel from '../components/AIPanel';
 import { getColumns, getFormFields } from '../components/FieldConfig';
 
+function Pagination({ page, totalPages, onPageChange }) {
+  if (!totalPages || totalPages <= 1) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20 }}>
+      <button onClick={() => onPageChange(page - 1)} disabled={page === 1} style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e9d8fd', cursor: page === 1 ? 'default' : 'pointer', background: page === 1 ? '#f7fafc' : 'white' }}>
+        &lsaquo;
+      </button>
+      <span style={{ fontSize: 13, color: '#718096' }}>Page {page} of {totalPages}</span>
+      <button onClick={() => onPageChange(page + 1)} disabled={page === totalPages} style={{ padding: '6px 14px', borderRadius: 6, border: '1px solid #e9d8fd', cursor: page === totalPages ? 'default' : 'pointer', background: page === totalPages ? '#f7fafc' : 'white' }}>
+        &rsaquo;
+      </button>
+    </div>
+  );
+}
+
 function FeaturePage({ feature, token, onBack, features }) {
   const [items, setItems] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showDetail, setShowDetail] = useState(null);
@@ -16,11 +32,17 @@ function FeaturePage({ feature, token, onBack, features }) {
 
   const headers = { Authorization: `Bearer ${token}` };
 
-  const fetchItems = useCallback(async () => {
+  const fetchItems = useCallback(async (page = 1) => {
     try {
       setLoading(true);
-      const res = await axios.get(feature.endpoint, { headers });
-      setItems(res.data);
+      const res = await axios.get(`${feature.endpoint}?page=${page}&limit=20`, { headers });
+      // Handle both paginated and legacy array responses
+      if (res.data && res.data.data) {
+        setItems(res.data.data);
+        setPagination(res.data.pagination);
+      } else {
+        setItems(Array.isArray(res.data) ? res.data : []);
+      }
     } catch (err) {
       toast.error('Failed to load data');
     }
@@ -28,7 +50,7 @@ function FeaturePage({ feature, token, onBack, features }) {
   }, [feature.endpoint]);
 
   useEffect(() => {
-    fetchItems();
+    fetchItems(1);
     setShowForm(false);
     setShowDetail(null);
     setEditItem(null);
@@ -40,7 +62,7 @@ function FeaturePage({ feature, token, onBack, features }) {
       await axios.post(feature.endpoint, data, { headers });
       toast.success(`${feature.label} created successfully`);
       setShowForm(false);
-      fetchItems();
+      fetchItems(pagination.page);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to create');
     }
@@ -52,7 +74,7 @@ function FeaturePage({ feature, token, onBack, features }) {
       toast.success(`${feature.label} updated successfully`);
       setEditItem(null);
       setShowForm(false);
-      fetchItems();
+      fetchItems(pagination.page);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to update');
     }
@@ -64,7 +86,7 @@ function FeaturePage({ feature, token, onBack, features }) {
       await axios.delete(`${feature.endpoint}/${id}`, { headers });
       toast.success('Deleted successfully');
       setShowDetail(null);
-      fetchItems();
+      fetchItems(pagination.page);
     } catch (err) {
       toast.error('Failed to delete');
     }
@@ -82,6 +104,7 @@ function FeaturePage({ feature, token, onBack, features }) {
       { label: 'Family Communication Draft', endpoint: '/api/ai/family-communication', paramKey: 'patientId' },
       { label: 'Compliance Documentation', endpoint: '/api/ai/compliance-documentation', paramKey: 'patientId' },
       { label: 'Bereavement Resources', endpoint: '/api/ai/bereavement-resources', paramKey: 'patientId' },
+      { label: 'Predictive Decline Assessment', endpoint: '/api/ai/predictive-decline', paramKey: 'patientId' },
     ],
     'care-plans': [
       { label: 'Generate Care Plan Narrative', endpoint: '/api/ai/care-plan-narrative', paramKey: 'patientId' },
@@ -100,6 +123,7 @@ function FeaturePage({ feature, token, onBack, features }) {
     ],
     'bereavement': [
       { label: 'Bereavement Resources', endpoint: '/api/ai/bereavement-resources', paramKey: 'patientId' },
+      { label: 'Generate Contact Script (Next Milestone)', endpoint: '/api/ai/bereavement-contact', paramKey: 'bereavementId', useItemId: true },
     ],
     'team-meetings': [
       { label: 'Generate Meeting Summary', endpoint: '/api/ai/meeting-summary', paramKey: 'meetingId', useItemId: true },
@@ -136,17 +160,27 @@ function FeaturePage({ feature, token, onBack, features }) {
       </div>
 
       {showAI && hasAI && (
-        <AIPanel
-          aiFeatures={hasAI}
-          items={items}
-          token={token}
-          featureKey={feature.key}
-        />
+        <div>
+          {feature.key === 'patients' && (
+            <div style={{
+              background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 6,
+              padding: '8px 14px', marginBottom: 12, fontSize: 13, color: '#856404',
+            }}>
+              Clinical AI analysis for internal use only. PHI is processed within the care team context.
+            </div>
+          )}
+          <AIPanel
+            aiFeatures={hasAI}
+            items={items}
+            token={token}
+            featureKey={feature.key}
+          />
+        </div>
       )}
 
       <div className="data-section">
         <div className="data-header">
-          <h2>All Records ({items.length})</h2>
+          <h2>All Records ({pagination.total || items.length})</h2>
         </div>
 
         {loading ? (
@@ -208,6 +242,7 @@ function FeaturePage({ feature, token, onBack, features }) {
           </table>
         )}
       </div>
+      <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={(p) => fetchItems(p)} />
 
       {showForm && (
         <FormModal

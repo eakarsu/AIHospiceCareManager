@@ -281,6 +281,16 @@ const ComplianceDoc = sequelize.define('ComplianceDoc', {
   assignedTo: { type: DataTypes.STRING }
 });
 
+// PHI Audit Log Model
+const AuditLog = sequelize.define('AuditLog', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  user_id: { type: DataTypes.INTEGER },
+  action: { type: DataTypes.STRING, allowNull: false },
+  entity_type: { type: DataTypes.STRING },
+  entity_id: { type: DataTypes.INTEGER },
+  details: { type: DataTypes.TEXT },
+});
+
 // Family Satisfaction Survey Model
 const Survey = sequelize.define('Survey', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -325,6 +335,7 @@ SocialWorkAssessment.belongsTo(Patient, { foreignKey: 'patientId' });
 module.exports = {
   sequelize,
   User,
+  AuditLog,
   Patient,
   CarePlan,
   Visit,

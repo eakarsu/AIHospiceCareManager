@@ -21,6 +21,12 @@ function Sidebar({ features, currentPage, onNavigate, user, onLogout }) {
         >
           📊 Dashboard
         </button>
+        <button
+          className={currentPage === 'advanced-ai' ? 'active' : ''}
+          onClick={() => onNavigate('advanced-ai')}
+        >
+          🤖 Advanced AI
+        </button>
 
         {Object.entries(sections).map(([section, items]) => (
           <React.Fragment key={section}>

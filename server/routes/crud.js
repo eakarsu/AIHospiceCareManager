@@ -6,14 +6,27 @@ const models = require('../models');
 function createCrudRouter(Model, modelName, includeOptions = {}) {
   const router = express.Router();
 
-  // Get all
+  // Get all (with pagination)
   router.get('/', auth, async (req, res) => {
     try {
-      const items = await Model.findAll({
-        order: [['createdAt', 'DESC']],
-        ...includeOptions
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+
+      const [items, total] = await Promise.all([
+        Model.findAll({
+          order: [['createdAt', 'DESC']],
+          limit,
+          offset,
+          ...includeOptions,
+        }),
+        Model.count(),
+      ]);
+
+      res.json({
+        data: items,
+        pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
       });
-      res.json(items);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

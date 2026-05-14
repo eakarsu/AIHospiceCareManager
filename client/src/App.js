@@ -3,9 +3,27 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import FeaturePage from './pages/FeaturePage';
+import AdvancedAITools from './pages/AdvancedAITools';
 import Sidebar from './components/Sidebar';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// === Batch 04 Gaps & Frontend Mounts ===
+import CfAgenticHospiceCareCoordinatorSchedul from './pages/CfAgenticHospiceCareCoordinatorSchedul';
+import CfLegacyLetterPlatformWithPatientReco from './pages/CfLegacyLetterPlatformWithPatientReco';
+import CfPainManagementAiAdvisorMonitoringSy from './pages/CfPainManagementAiAdvisorMonitoringSy';
+import CfGriefStageDetectionAdaptiveSupportR from './pages/CfGriefStageDetectionAdaptiveSupportR';
+import CfVolunteerChaplainSchedulingMatchingS from './pages/CfVolunteerChaplainSchedulingMatchingS';
+import CfAdvanceCarePlanningCoPilotGuiding from './pages/CfAdvanceCarePlanningCoPilotGuiding';
+import GapNoAdvanceDirectiveSummarizerForCare from './pages/GapNoAdvanceDirectiveSummarizerForCare';
+import GapNoFamilyMeetingAgendaGenerator from './pages/GapNoFamilyMeetingAgendaGenerator';
+import GapNoVolunteerNeedMatchingAi from './pages/GapNoVolunteerNeedMatchingAi';
+import GapNoMedicationTrackingModule from './pages/GapNoMedicationTrackingModule';
+import GapNoStandardizedPainsymptomAssessmentF from './pages/GapNoStandardizedPainsymptomAssessmentF';
+import GapNoVolunteerCoordinationModule from './pages/GapNoVolunteerCoordinationModule';
+import GapNoWebhookSurface from './pages/GapNoWebhookSurface';
+import GapNoFileUploadForAdvanceDirectives from './pages/GapNoFileUploadForAdvanceDirectives';
+import GapNoPaymentBillingModule from './pages/GapNoPaymentBillingModule';
 
 const FEATURES = [
   { key: 'patients', label: 'Patient Management', icon: '👤', endpoint: '/api/patients', color: '#e6f3ff', desc: 'Admission, enrollment & diagnosis tracking', section: 'Clinical' },
@@ -73,6 +91,8 @@ function App() {
       <main className="main-content">
         {currentPage === 'dashboard' ? (
           <Dashboard features={FEATURES} onNavigate={setCurrentPage} token={token} />
+        ) : currentPage === 'advanced-ai' ? (
+          <AdvancedAITools token={token} />
         ) : (
           <FeaturePage
             feature={currentFeature}
