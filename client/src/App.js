@@ -24,6 +24,7 @@ import GapNoVolunteerCoordinationModule from './pages/GapNoVolunteerCoordination
 import GapNoWebhookSurface from './pages/GapNoWebhookSurface';
 import GapNoFileUploadForAdvanceDirectives from './pages/GapNoFileUploadForAdvanceDirectives';
 import GapNoPaymentBillingModule from './pages/GapNoPaymentBillingModule';
+import ComfortKitRefillPredictor from './pages/ComfortKitRefillPredictor';
 
 const FEATURES = [
   { key: 'patients', label: 'Patient Management', icon: '👤', endpoint: '/api/patients', color: '#e6f3ff', desc: 'Admission, enrollment & diagnosis tracking', section: 'Clinical' },
@@ -46,6 +47,7 @@ const FEATURES = [
   { key: 'compliance', label: 'Compliance Docs', icon: '📑', endpoint: '/api/compliance', color: '#e0f7fa', desc: 'Regulatory compliance documentation', section: 'Compliance' },
   { key: 'team-meetings', label: 'IDT Meetings', icon: '👥', endpoint: '/api/team-meetings', color: '#efebe9', desc: 'Interdisciplinary team meeting management', section: 'Compliance' },
   { key: 'surveys', label: 'Family Surveys', icon: '📝', endpoint: '/api/surveys', color: '#e8eaf6', desc: 'Family satisfaction survey tracking', section: 'Compliance' },
+  { key: 'comfort-kit-refill-predictor', label: 'Comfort Kit Refill', icon: '🧰', endpoint: '/api/comfort-kit-refill-predictor', color: '#e1f5fe', desc: 'Predicts urgent comfort-kit refill needs', section: 'Clinical' },
 ];
 
 function App() {
@@ -93,6 +95,8 @@ function App() {
           <Dashboard features={FEATURES} onNavigate={setCurrentPage} token={token} />
         ) : currentPage === 'advanced-ai' ? (
           <AdvancedAITools token={token} />
+        ) : currentPage === 'comfort-kit-refill-predictor' ? (
+          <ComfortKitRefillPredictor token={token} />
         ) : (
           <FeaturePage
             feature={currentFeature}

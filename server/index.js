@@ -64,6 +64,7 @@ app.use('/api/compliance', createCrudRouter(models.ComplianceDoc, 'ComplianceDoc
 app.use('/api/surveys', createCrudRouter(models.Survey, 'Survey'));
 app.use('/api/legacy-messages', require('./routes/legacyMessages'));
 app.use('/api/advance-care-planning', require('./routes/advanceCarePlanning'));
+app.use('/api/comfort-kit-refill-predictor', require('./routes/comfortKitRefillPredictor'));
 
 // Bereavement due contacts endpoint
 // Dashboard stats

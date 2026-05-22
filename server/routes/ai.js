@@ -29,7 +29,7 @@ async function callOpenRouter(prompt, systemMessage = '') {
       'X-Title': 'AI Hospice Care Manager',
     },
     body: JSON.stringify({
-      model: process.env.OPENROUTER_MODEL || 'anthropic/claude-3-5-sonnet-20241022',
+      model: process.env.OPENROUTER_MODEL || (process.env.OPENROUTER_MODEL || 'anthropic/claude-haiku-4.5'),
       messages: [
         { role: 'system', content: (systemMessage || 'You are an expert hospice care clinical assistant. Provide compassionate, evidence-based recommendations.') + '\n\n' + PHI_DISCLAIMER },
         { role: 'user', content: prompt },
@@ -464,6 +464,131 @@ Return JSON: { "title": string, "objectives": string[], "agenda": [{ "topic": st
     res.json({ result: structured ? structured.title : raw, structured, raw, type: 'family-meeting-agenda', patientId });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+const CLINICAL_DISCLAIMER = 'Clinical decision support only — verify with care team before acting';
+
+// 12. Pain Management AI Advisor (LLM advisory only)
+router.post('/pain-management-advisor', auth, async (req, res) => {
+  try {
+    const { patient_id, pain_assessment, contraindications, allergies } = req.body || {};
+    if (!pain_assessment || typeof pain_assessment !== 'object') {
+      return res.status(400).json({ error: 'pain_assessment object required' });
+    }
+    const { scale, location, quality, duration_days, current_medications } = pain_assessment;
+
+    if (patient_id) logPHIAccess(req, patient_id);
+
+    const prompt = `Provide clinical decision support for hospice pain management. This is advisory only — NOT a prescription. Always flag medication-safety review when opioids, adjuvants, or drug-drug interactions are involved.
+
+Pain assessment:
+- Numeric scale (0-10): ${scale ?? 'not reported'}
+- Location: ${location || 'unspecified'}
+- Quality (e.g., burning, aching, neuropathic): ${quality || 'unspecified'}
+- Duration (days): ${duration_days ?? 'unspecified'}
+- Current medications: ${Array.isArray(current_medications) ? current_medications.join(', ') : (current_medications || 'none reported')}
+Contraindications: ${Array.isArray(contraindications) ? contraindications.join(', ') : (contraindications || 'none reported')}
+Allergies: ${Array.isArray(allergies) ? allergies.join(', ') : (allergies || 'none reported')}
+
+Return JSON: { "recommended_approaches": [{ "intervention": string, "rationale": string, "monitoring": string }], "requires_md_review": boolean, "escalation_indicators": string[], "family_education_points": string[] }
+
+Set requires_md_review=true when: opioid initiation/escalation, suspected interactions, renal/hepatic concerns, neuropathic adjuvants, breakthrough-dosing changes, or any contraindication conflict. Label all output as clinical decision support, not a prescription.`;
+
+    const raw = await callOpenRouter(prompt, 'You are a hospice clinical decision support assistant. You do NOT prescribe. Output is advisory only and must be verified by a licensed clinician. Format your response as JSON.');
+    const structured = parseStructured(raw);
+    res.json({
+      disclaimer: CLINICAL_DISCLAIMER,
+      advisory_label: 'clinical decision support, not a prescription',
+      recommended_approaches: structured?.recommended_approaches || [],
+      requires_md_review: structured?.requires_md_review !== undefined ? !!structured.requires_md_review : true,
+      escalation_indicators: structured?.escalation_indicators || [],
+      family_education_points: structured?.family_education_points || [],
+      structured,
+      raw,
+      type: 'pain-management-advisor',
+      patient_id: patient_id || null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, disclaimer: CLINICAL_DISCLAIMER });
+  }
+});
+
+// 13. Grief Stage Detection + Adaptive Support
+router.post('/grief-stage-detection', auth, async (req, res) => {
+  try {
+    const { caregiver_notes, observable_behaviors, days_since_loss, prior_assessments } = req.body || {};
+    if (!caregiver_notes || typeof caregiver_notes !== 'string') {
+      return res.status(400).json({ error: 'caregiver_notes (string) required' });
+    }
+
+    const prompt = `Assess grief stage from caregiver-reported notes and recommend adaptive supportive interventions. This is screening-level decision support, not a diagnosis. Watch for complicated/prolonged grief indicators.
+
+Caregiver notes: ${caregiver_notes}
+Observable behaviors: ${Array.isArray(observable_behaviors) ? observable_behaviors.join('; ') : (observable_behaviors || 'not provided')}
+Days since loss: ${days_since_loss ?? 'unspecified'}
+Prior assessments: ${Array.isArray(prior_assessments) ? prior_assessments.join('; ') : (prior_assessments || 'none on file')}
+
+Use a recognized framework (e.g., Kübler-Ross stages, Worden's tasks, or dual-process model). Pick the closest assessed stage but acknowledge non-linearity.
+
+Return JSON: { "assessed_stage": string, "framework_used": string, "indicators_present": string[], "supportive_interventions": [{ "intervention": string, "rationale": string }], "watch_for_complicated_grief": string[], "suggested_followup_window_days": number }`;
+
+    const raw = await callOpenRouter(prompt, 'You are a hospice bereavement specialist providing screening-level decision support. Do not diagnose. Format your response as JSON.');
+    const structured = parseStructured(raw);
+    res.json({
+      disclaimer: CLINICAL_DISCLAIMER,
+      assessed_stage: structured?.assessed_stage || null,
+      framework_used: structured?.framework_used || null,
+      indicators_present: structured?.indicators_present || [],
+      supportive_interventions: structured?.supportive_interventions || [],
+      watch_for_complicated_grief: structured?.watch_for_complicated_grief || [],
+      suggested_followup_window_days: structured?.suggested_followup_window_days ?? null,
+      structured,
+      raw,
+      type: 'grief-stage-detection',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, disclaimer: CLINICAL_DISCLAIMER });
+  }
+});
+
+// 14. Advance Care Planning Summary (stateless)
+router.post('/advance-care-planning-summary', auth, async (req, res) => {
+  try {
+    const { patient, conversation_notes } = req.body || {};
+    if (!patient || typeof patient !== 'object') {
+      return res.status(400).json({ error: 'patient object required' });
+    }
+    const { diagnosis, prognosis_summary, values_statements, treatment_preferences } = patient;
+
+    const prompt = `Produce an advance care planning (ACP) summary package for the care team and family. Stateless — do not assume any prior data beyond what is provided. Identify gaps that still need clinician follow-up.
+
+Patient summary:
+- Diagnosis: ${diagnosis || 'unspecified'}
+- Prognosis summary: ${prognosis_summary || 'unspecified'}
+- Values statements: ${Array.isArray(values_statements) ? values_statements.join('; ') : (values_statements || 'none captured')}
+- Treatment preferences: ${Array.isArray(treatment_preferences) ? treatment_preferences.join('; ') : (treatment_preferences || 'none captured')}
+
+Conversation notes: ${conversation_notes || 'none provided'}
+
+Return JSON: { "summary_for_chart": string, "family_conversation_starter": string, "document_drafts": { "living_will_outline": string, "dnr_rationale": string, "healthcare_proxy_guidance": string }, "gaps_to_address": string[] }
+
+All drafts are STARTING POINTS for clinician + family review, not finalized legal documents.`;
+
+    const raw = await callOpenRouter(prompt, 'You are a hospice advance care planning facilitator. Produce respectful, values-aligned drafts that require human review before use. Format your response as JSON.');
+    const structured = parseStructured(raw);
+    res.json({
+      disclaimer: CLINICAL_DISCLAIMER,
+      summary_for_chart: structured?.summary_for_chart || '',
+      family_conversation_starter: structured?.family_conversation_starter || '',
+      document_drafts: structured?.document_drafts || { living_will_outline: '', dnr_rationale: '', healthcare_proxy_guidance: '' },
+      gaps_to_address: structured?.gaps_to_address || [],
+      structured,
+      raw,
+      type: 'advance-care-planning-summary',
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message, disclaimer: CLINICAL_DISCLAIMER });
   }
 });
 
