@@ -11,17 +11,12 @@ const bereavementRoutes = require('./routes/bereavement');
 // Apply pass 5 — additive
 const integrationsRoutes = require('./routes/integrations');
 const coordinationRoutes = require('./routes/coordination');
+const { validateRuntime } = require('./governance/runtime');
+const governanceRouter = require('./governance/router');
+
+validateRuntime();
 
 // === Batch 04 Gaps & Frontend Mounts ===
-const route_gap_no_advance_directive_summarizer_for_care = require('./routes/gap-no-advance-directive-summarizer-for-care');
-const route_gap_no_family_meeting_agenda_generator = require('./routes/gap-no-family-meeting-agenda-generator');
-const route_gap_no_volunteer_need_matching_ai = require('./routes/gap-no-volunteer-need-matching-ai');
-const route_gap_no_medication_tracking_module = require('./routes/gap-no-medication-tracking-module');
-const route_gap_no_standardized_painsymptom_assessment_f = require('./routes/gap-no-standardized-painsymptom-assessment-f');
-const route_gap_no_volunteer_coordination_module = require('./routes/gap-no-volunteer-coordination-module');
-const route_gap_no_webhook_surface = require('./routes/gap-no-webhook-surface');
-const route_gap_no_file_upload_for_advance_directives = require('./routes/gap-no-file-upload-for-advance-directives');
-const route_gap_no_payment_billing_module = require('./routes/gap-no-payment-billing-module');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -65,6 +60,7 @@ app.use('/api/surveys', createCrudRouter(models.Survey, 'Survey'));
 app.use('/api/legacy-messages', require('./routes/legacyMessages'));
 app.use('/api/advance-care-planning', require('./routes/advanceCarePlanning'));
 app.use('/api/comfort-kit-refill-predictor', require('./routes/comfortKitRefillPredictor'));
+app.use('/api/governed-care-coordination', governanceRouter);
 
 // Bereavement due contacts endpoint
 // Dashboard stats
@@ -103,17 +99,10 @@ async function start() {
   try {
     await sequelize.authenticate();
     console.log('Database connected successfully.');
-    await sequelize.sync();
+    if (process.env.ENABLE_LEGACY_SCHEMA_BOOTSTRAP === 'true') {
+      await sequelize.sync();
+    }
     
-app.use('/api/gap-no-advance-directive-summarizer-for-care', route_gap_no_advance_directive_summarizer_for_care);
-app.use('/api/gap-no-family-meeting-agenda-generator', route_gap_no_family_meeting_agenda_generator);
-app.use('/api/gap-no-volunteer-need-matching-ai', route_gap_no_volunteer_need_matching_ai);
-app.use('/api/gap-no-medication-tracking-module', route_gap_no_medication_tracking_module);
-app.use('/api/gap-no-standardized-painsymptom-assessment-f', route_gap_no_standardized_painsymptom_assessment_f);
-app.use('/api/gap-no-volunteer-coordination-module', route_gap_no_volunteer_coordination_module);
-app.use('/api/gap-no-webhook-surface', route_gap_no_webhook_surface);
-app.use('/api/gap-no-file-upload-for-advance-directives', route_gap_no_file_upload_for_advance_directives);
-app.use('/api/gap-no-payment-billing-module', route_gap_no_payment_billing_module);
 
 app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

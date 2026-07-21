@@ -20,11 +20,6 @@ function Login({ onLogin }) {
     setLoading(false);
   };
 
-  const quickLogin = () => {
-    setEmail('admin@hospice.com');
-    setPassword('password123');
-  };
-
   return (
     <div className="login-page">
       <div className="login-container">
@@ -62,12 +57,6 @@ function Login({ onLogin }) {
           </button>
         </form>
 
-        <div className="quick-login">
-          <p>Quick access for demo</p>
-          <button className="quick-login-btn" onClick={quickLogin}>
-            Auto-fill Admin Credentials
-          </button>
-        </div>
       </div>
     </div>
   );

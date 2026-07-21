@@ -8,7 +8,9 @@
     "client": "cd client && react-scripts start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "seed": "node server/seeds/seed.js",
-    "setup-db": "node server/seeds/setup.js"
+    "setup-db": "node server/seeds/setup.js",
+    "test:governance": "node --test tests/governance.test.js",
+    "check:governance": "node --check server/governance/workflowCore.js && node --check server/governance/routerFactory.js && node --check server/index.js && npm run test:governance"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
