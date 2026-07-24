@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const auth = require('../middleware/auth');
 const { Patient, CarePlan, Medication, SymptomLog, FamilyMember, Visit, Bereavement, TeamMeeting, AuditLog } = require('../models');
 const router = express.Router();
@@ -9,7 +10,7 @@ const router = express.Router();
 const aiRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  keyGenerator: (req) => req.user ? `user:${req.user.id}` : req.ip,
+  keyGenerator: (req) => req.user ? `user:${req.user.id}` : ipKeyGenerator(req.ip),
   message: { error: 'AI rate limit exceeded. Max 20 requests/hour.' },
   standardHeaders: true,
   legacyHeaders: false,

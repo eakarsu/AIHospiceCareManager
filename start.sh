@@ -13,6 +13,13 @@ fail() {
 }
 
 [ -f "$project_dir/.env" ] || fail "copy .env.example to .env and supply local secrets"
+set -a
+# shellcheck disable=SC1091
+. "$project_dir/.env"
+set +a
+backend_port="${BACKEND_PORT:-${PORT:-3001}}"
+frontend_port="${FRONTEND_PORT:-3000}"
+export PORT="$backend_port" BACKEND_PORT="$backend_port" FRONTEND_PORT="$frontend_port"
 jwt_secret="$(sed -n 's/^JWT_SECRET=//p' "$project_dir/.env" | tail -n 1)"
 [ "${#jwt_secret}" -ge 32 ] || fail "JWT_SECRET in .env must contain at least 32 characters"
 [ -d "$project_dir/./node_modules" ] || fail "backend dependencies are absent; run the documented npm ci step explicitly"
@@ -51,7 +58,7 @@ backend_pid="$!"
 
 (
   cd "$project_dir/client"
-  BROWSER=none npm start
+  BROWSER=none PORT="$frontend_port" npm start
 ) &
 frontend_pid="$!"
 

@@ -72,7 +72,6 @@ function AdvancedAITools({ token }) {
         setPatients(data);
       })
       .catch(() => setPatients([]));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const switchTool = (t) => {
