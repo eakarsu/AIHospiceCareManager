@@ -7,6 +7,12 @@ const {
   Supply, TeamMeeting, ComplianceDoc, Survey
 } = require('../models');
 
+function requireDemoPassword() {
+  const password = process.env.DEMO_PASSWORD || process.env.SEED_DEMO_PASSWORD || process.env.DEMO_SEED_PASSWORD || '';
+  if (password.length < 12 || password.length > 1024) throw new Error('DEMO_PASSWORD must contain 12-1024 characters');
+  return password;
+}
+
 async function seed() {
   if (process.env.NODE_ENV === 'production' || process.env.ALLOW_DEMO_SEED !== 'true') {
     throw new Error('Destructive demo seed refused. Set ALLOW_DEMO_SEED=true outside production.');
@@ -16,7 +22,7 @@ async function seed() {
     console.log('Database synced. Seeding data...');
 
     // Users (15+)
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const hashedPassword = await bcrypt.hash(requireDemoPassword(), 10);
     const users = await User.bulkCreate([
       { email: 'admin@hospice.com', password: hashedPassword, name: 'Dr. Sarah Mitchell', role: 'admin' },
       { email: 'nurse@hospice.com', password: hashedPassword, name: 'Emily Chen, RN', role: 'nurse' },
@@ -417,7 +423,7 @@ async function seed() {
     ]);
 
     console.log('Seed data inserted successfully!');
-    console.log('Login credentials: admin@hospice.com / password123');
+    console.log('Demo login users provisioned from the local environment.');
     process.exit(0);
   } catch (err) {
     console.error('Seeding error:', err);
