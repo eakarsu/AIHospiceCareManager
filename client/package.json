@@ -14,7 +14,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "serve:build": "node scripts/serve-build.js"
   },
   "proxy": "http://localhost:3001",
   "browserslist": {

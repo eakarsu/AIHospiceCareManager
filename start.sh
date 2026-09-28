@@ -102,7 +102,7 @@ jwt_secret="$(sed -n 's/^JWT_SECRET=//p' "$project_dir/.env" | tail -n 1)"
 
 check_port() {
   local port="$1"
-  if command -v lsof >/dev/null 2>&1 && lsof -ti ":${port}" >/dev/null 2>&1; then
+  if command -v lsof >/dev/null 2>&1 && lsof -tiTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1; then
     fail "port ${port} is already owned by another process; stop it explicitly or configure another port"
   fi
 }
@@ -133,7 +133,8 @@ backend_pid="$!"
 
 (
   cd "$project_dir/client"
-  BROWSER=none PORT="$frontend_port" npm start
+  npm run build
+  HOST="${FRONTEND_HOST:-127.0.0.1}" PORT="$frontend_port" npm run serve:build
 ) &
 frontend_pid="$!"
 

@@ -50,9 +50,19 @@ const FEATURES = [
   { key: 'comfort-kit-refill-predictor', label: 'Comfort Kit Refill', icon: '🧰', endpoint: '/api/comfort-kit-refill-predictor', color: '#e1f5fe', desc: 'Predicts urgent comfort-kit refill needs', section: 'Clinical' },
 ];
 
+function readStoredUser() {
+  try {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    localStorage.removeItem('user');
+    return null;
+  }
+}
+
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || 'null'));
+  const [user, setUser] = useState(readStoredUser);
   const [currentPage, setCurrentPage] = useState('dashboard');
 
   const handleLogin = (token, user) => {
