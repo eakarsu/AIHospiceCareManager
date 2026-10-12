@@ -1,3 +1,4 @@
+import AIReportLibrary from "./AIReportLibrary";
 import React from 'react';
 
 function Sidebar({ features, currentPage, onNavigate, user, onLogout }) {
@@ -50,7 +51,7 @@ function Sidebar({ features, currentPage, onNavigate, user, onLogout }) {
         </div>
         <button onClick={onLogout}>Sign Out</button>
       </div>
-    </div>
+    <AIReportLibrary /></div>
   );
 }
 

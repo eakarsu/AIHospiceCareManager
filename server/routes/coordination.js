@@ -31,36 +31,44 @@ router.get('/visit-conflicts', auth, async (req, res) => {
     const date = req.query.date; // YYYY-MM-DD optional
     const where = { status: 'scheduled' };
     if (date) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date) {
+        return res.status(400).json({ error: 'date must be an actual YYYY-MM-DD calendar date.' });
+      }
       const start = new Date(date + 'T00:00:00Z');
-      const end = new Date(date + 'T23:59:59Z');
-      where.scheduledAt = { [Op.between]: [start, end] };
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      where.visitDate = { [Op.gte]: start, [Op.lt]: end };
     }
     const visits = await Visit.findAll({ where });
 
-    // Group by clinician/staff (whichever field exists). Defensive on schema.
+    // Only documented native clinician/date/duration values establish overlap.
     const groups = {};
+    let insufficientSourceVisits = 0;
     for (const v of visits) {
-      const key = v.clinicianId || v.staffId || v.assignedTo || 'unassigned';
+      const key = String(v.clinicianName || '').trim();
+      if (!key || !v.visitDate || !Number.isFinite(new Date(v.visitDate).getTime()) || !(Number(v.duration) > 0)) {
+        insufficientSourceVisits++;
+        continue;
+      }
       if (!groups[key]) groups[key] = [];
       groups[key].push(v);
     }
 
     const conflicts = [];
     for (const [key, list] of Object.entries(groups)) {
-      list.sort((a, b) => new Date(a.scheduledAt || a.date) - new Date(b.scheduledAt || b.date));
+      list.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
       for (let i = 1; i < list.length; i += 1) {
-        const prev = list[i - 1];
         const cur = list[i];
-        const prevEnd = new Date(prev.scheduledAt || prev.date);
-        prevEnd.setMinutes(prevEnd.getMinutes() + (Number(prev.durationMinutes) || 60));
-        const curStart = new Date(cur.scheduledAt || cur.date);
-        if (curStart < prevEnd) {
-          conflicts.push({
-            clinician: key,
-            visit_a_id: prev.id,
-            visit_b_id: cur.id,
-            overlap_minutes: Math.round((prevEnd - curStart) / 60000),
-          });
+        const curStart = new Date(cur.visitDate).getTime();
+        const curEnd = curStart + Number(cur.duration) * 60000;
+        for (const prev of list.slice(0, i)) {
+          const prevEnd = new Date(prev.visitDate).getTime() + Number(prev.duration) * 60000;
+          const overlap = Math.min(prevEnd, curEnd) - curStart;
+          if (overlap > 0) conflicts.push({
+              clinician: key,
+              visit_a_id: prev.id,
+              visit_b_id: cur.id,
+              overlap_minutes: Math.round(overlap / 60000),
+            });
         }
       }
     }
@@ -69,6 +77,8 @@ router.get('/visit-conflicts', auth, async (req, res) => {
       total_visits: visits.length,
       total_conflicts: conflicts.length,
       conflicts,
+      insufficient_source_visits: insufficientSourceVisits,
+      date_timezone: 'UTC',
       disclaimer: DISCLAIMER,
       generated_at: new Date().toISOString(),
     });

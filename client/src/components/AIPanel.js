@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import NativeAIControls from './NativeAIControls';
+import AIReport from './AIReport';
 
 function AIPanel({ aiFeatures, items, token, featureKey }) {
   const [selectedAI, setSelectedAI] = useState(null);
@@ -313,6 +315,13 @@ function AIPanel({ aiFeatures, items, token, featureKey }) {
   };
 
   return (
+    <NativeAIControls busy={aiLoading} context="Hospice care" presets={['Care summary', 'Family update', 'Care team review'].map((name, index) => ({ name, fill: () => {
+      const feature = selectedAI || aiFeatures[index % aiFeatures.length];
+      if (feature) setSelectedAI(feature);
+      setAiResult(null);
+      if (feature?.endpoint === '/api/ai/family-communication') setExtraFields(prev => ({ ...prev, communicationType: communicationTypes[index % communicationTypes.length].value }));
+      return { filled: feature ? (feature.endpoint === '/api/ai/family-communication' ? 2 : 1) : 0, manual: [...(!feature ? ['AI feature'] : []), ...(!selectedItemId ? ['record selection'] : [])] };
+    } }))}>
     <div className="ai-result" style={{ marginBottom: '24px' }}>
       {/* PHI Disclaimer Banner */}
       <div style={{
@@ -381,25 +390,9 @@ function AIPanel({ aiFeatures, items, token, featureKey }) {
         </div>
       )}
 
-      {aiResult && (
-        <div>
-          <div className="ai-result-header" style={{ marginTop: '16px' }}>
-            <span className="ai-badge">{aiResult.type?.replace(/-/g, ' ').toUpperCase()}</span>
-          </div>
-
-          {/* Structured output */}
-          {aiResult.structured && renderStructuredResult(aiResult.structured, aiResult.type)}
-
-          {/* Fallback to markdown rendering if no structured handler */}
-          {(!aiResult.structured || !renderStructuredResult(aiResult.structured, aiResult.type)) && (
-            <div
-              className="ai-result-content"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(aiResult.result) }}
-            />
-          )}
-        </div>
-      )}
+      {aiResult && <AIReport response={aiResult} title={selectedAI?.label || 'AI assistant report'} />}
     </div>
+    </NativeAIControls>
   );
 }
 

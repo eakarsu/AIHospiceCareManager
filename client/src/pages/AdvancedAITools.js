@@ -1,3 +1,6 @@
+import NativeAIControls from "../components/NativeAIControls";
+import useNativeAIRequest from "../components/useNativeAIRequest";
+import FormattedAIReport from "../components/FormattedAIReport";
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -30,31 +33,9 @@ const TOOLS = [
   },
 ];
 
-function renderStructured(structured) {
-  if (!structured || typeof structured !== 'object') return null;
-  return (
-    <pre style={{ background: '#f7fafc', borderRadius: 8, padding: 14, overflow: 'auto', fontSize: 13, color: '#2d3748' }}>
-      {JSON.stringify(structured, null, 2)}
-    </pre>
-  );
-}
-
-function renderMarkdown(text) {
-  if (!text) return '';
-  let html = text
-    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.*$)/gm, '<li>$1</li>')
-    .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/\n/g, '<br/>');
-  html = html.replace(/(<li>.*?<\/li>(\s*<br\/>)?)+/g, (match) => '<ul>' + match.replace(/<br\/>/g, '') + '</ul>');
-  return '<p>' + html + '</p>';
-}
-
 function AdvancedAITools({ token }) {
+  const nativeAIRequest = useNativeAIRequest();
+
   const [tool, setTool] = useState(TOOLS[0]);
   const [formData, setFormData] = useState({});
   const [patients, setPatients] = useState([]);
@@ -101,7 +82,7 @@ function AdvancedAITools({ token }) {
         if (v === '' || v === undefined || v === null) return;
         body[f.name] = f.type === 'number' ? Number(v) : v;
       });
-      const res = await axios.post(tool.endpoint, body, { headers });
+      const res = await nativeAIRequest.run((signal) => axios.post(tool.endpoint, body, { ...({ headers }), ...({ signal }) }));
       setResult(res.data);
     } catch (err) {
       const status = err.response?.status;
@@ -115,7 +96,7 @@ function AdvancedAITools({ token }) {
   };
 
   return (
-    <div>
+    <NativeAIControls busy={nativeAIRequest.busy} onCancel={nativeAIRequest.cancel} context="Hospice Care Manager"><div>
       <div className="page-header">
         <div>
           <h1>🤖 Advanced AI Tools</h1>
@@ -149,7 +130,7 @@ function AdvancedAITools({ token }) {
                 {f.label} {f.required && <span style={{ color: '#e53e3e' }}>*</span>}
               </label>
               {f.type === 'patient' ? (
-                <select
+                <select data-ai-field={f.name}
                   value={formData[f.name] || ''}
                   onChange={(e) => setField(f.name, e.target.value ? Number(e.target.value) : '')}
                   style={{ width: '100%', padding: 10, borderRadius: 8, border: '2px solid #e9d8fd', fontSize: 14 }}
@@ -162,7 +143,7 @@ function AdvancedAITools({ token }) {
                   ))}
                 </select>
               ) : f.type === 'select' ? (
-                <select
+                <select data-ai-field={f.name}
                   value={formData[f.name] || ''}
                   onChange={(e) => setField(f.name, e.target.value)}
                   style={{ width: '100%', padding: 10, borderRadius: 8, border: '2px solid #e9d8fd', fontSize: 14 }}
@@ -171,7 +152,7 @@ function AdvancedAITools({ token }) {
                   {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               ) : f.type === 'textarea' ? (
-                <textarea
+                <textarea data-ai-field={f.name}
                   value={formData[f.name] || ''}
                   placeholder={f.placeholder || ''}
                   rows={4}
@@ -179,7 +160,7 @@ function AdvancedAITools({ token }) {
                   style={{ width: '100%', padding: 10, borderRadius: 8, border: '2px solid #e9d8fd', fontSize: 14, fontFamily: 'inherit' }}
                 />
               ) : (
-                <input
+                <input data-ai-field={f.name}
                   type={f.type || 'text'}
                   value={formData[f.name] || ''}
                   placeholder={f.placeholder || ''}
@@ -212,20 +193,11 @@ function AdvancedAITools({ token }) {
             <div className="ai-result-header">
               <span className="ai-badge">{(result.type || tool.id).replace(/-/g, ' ').toUpperCase()}</span>
             </div>
-            {result.structured && renderStructured(result.structured)}
-            {result.result && (
-              <div
-                className="ai-result-content"
-                dangerouslySetInnerHTML={{ __html: renderMarkdown(result.result) }}
-              />
-            )}
-            {!result.structured && !result.result && (
-              <pre style={{ background: '#f7fafc', borderRadius: 8, padding: 14, overflow: 'auto', fontSize: 13 }}>{JSON.stringify(result, null, 2)}</pre>
-            )}
+            <FormattedAIReport response={result} title={tool.label} />
           </div>
         )}
       </div>
-    </div>
+    </div></NativeAIControls>
   );
 }
 

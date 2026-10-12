@@ -86,8 +86,12 @@ Return JSON:
 // GET /api/legacy-messages/family/:patient_id
 router.get('/family/:patient_id', async (req, res) => {
   try {
-    let fm = [];
-    try { fm = await FamilyMember.findAll({ where: { patient_id: req.params.patient_id }, limit: 50 }); } catch (_) {}
+    if (!/^\d+$/.test(req.params.patient_id) || Number(req.params.patient_id) < 1) {
+      return res.status(400).json({ error: 'Select an actual saved patient.' });
+    }
+    const patient = await Patient.findByPk(req.params.patient_id);
+    if (!patient) return res.status(404).json({ error: 'Patient not found.' });
+    const fm = await FamilyMember.findAll({ where: { patientId: patient.id }, limit: 50 });
     res.json(fm);
   } catch (err) {
     res.status(500).json({ error: err.message });
