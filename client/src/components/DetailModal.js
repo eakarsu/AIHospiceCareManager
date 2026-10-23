@@ -13,7 +13,7 @@ function DetailModal({ title, item, fields, onClose, onEdit, onDelete }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
+      <div className="modal" role="dialog" aria-modal="true" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{title} Details</h2>
           <button className="modal-close" onClick={onClose}>✕</button>
@@ -47,7 +47,7 @@ function DetailModal({ title, item, fields, onClose, onEdit, onDelete }) {
         <div className="modal-footer">
           <button className="btn btn-danger" onClick={onDelete}>Delete</button>
           <button className="btn btn-primary" onClick={onEdit}>Edit</button>
-          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
         </div>
       </div>
     </div>

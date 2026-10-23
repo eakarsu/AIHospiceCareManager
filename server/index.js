@@ -18,6 +18,7 @@ validateRuntime();
 
 // === Batch 04 Gaps & Frontend Mounts ===
 const app = express();
+app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 const PORT = process.env.PORT || 3001;
 
 app.use(require('helmet')());
@@ -61,6 +62,7 @@ app.use('/api/legacy-messages', require('./routes/legacyMessages'));
 app.use('/api/advance-care-planning', require('./routes/advanceCarePlanning'));
 app.use('/api/comfort-kit-refill-predictor', require('./routes/comfortKitRefillPredictor'));
 app.use('/api/governed-care-coordination', governanceRouter);
+app.use('/api/wave37', require('./middleware/auth'), require('./routes/wave37a').createWave37Router());
 
 // Bereavement due contacts endpoint
 // Dashboard stats

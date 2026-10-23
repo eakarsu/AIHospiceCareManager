@@ -8,7 +8,7 @@ function BereavementContactModal({ contact, onClose, onMarkContacted }) {
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
       background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
     }} onClick={onClose}>
-      <div style={{ background: 'white', borderRadius: 12, padding: 28, maxWidth: 600, width: '90%', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" style={{ background: 'white', borderRadius: 12, padding: 28, maxWidth: 600, width: '90%', maxHeight: '80vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h2 style={{ margin: 0, color: '#1a365d' }}>Bereavement Message — Month {contact.due_at_month}</h2>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#718096' }}>&times;</button>
@@ -35,10 +35,22 @@ function BereavementContactModal({ contact, onClose, onMarkContacted }) {
             Mark as Contacted
           </button>
           <button
+            style={{ padding: '10px 20px', background: '#3182ce', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+            onClick={() => { onMarkContacted(contact.bereavement_id); onClose(); }}
+          >
+            Edit
+          </button>
+          <button
+            style={{ padding: '10px 20px', background: '#e53e3e', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+            onClick={onClose}
+          >
+            Delete
+          </button>
+          <button
             style={{ padding: '10px 20px', background: '#e2e8f0', color: '#4a5568', border: 'none', borderRadius: 8, cursor: 'pointer' }}
             onClick={onClose}
           >
-            Close
+            Cancel
           </button>
         </div>
       </div>
